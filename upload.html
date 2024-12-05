@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Upload Test</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212; /* Dark background for techno feel */
+            color: #f0f0f0; /* Light color text */
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Full height view */
+            text-align: center;
+        }
+
+        h1 {
+            color: #ff4081; /* Vibrant Pink color for header */
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(255, 64, 129, 0.8), 0 0 30px rgba(255, 64, 129, 0.6); /* Glowing effect */
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #1e1e1e; /* Darker background for form */
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(255, 64, 129, 0.3);
+            width: 100%;
+            max-width: 500px; /* Center the form with maximum width */
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            margin-bottom: 20px;
+            padding: 15px;
+            width: 100%;
+            font-size: 16px;
+            background-color: #333; /* Dark input fields */
+            color: #f0f0f0;
+            border: 2px solid #ff4081;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(255, 64, 129, 0.5);
+            transition: border 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="file"]:focus,
+        input[type="text"]:focus {
+            border-color: #ff80ab;
+            box-shadow: 0 0 10px rgba(255, 128, 171, 0.7);
+            outline: none;
+        }
+
+        button {
+            background-color: #ff4081;
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 64, 129, 0.2);
+        }
+
+        button:hover {
+            background-color: #ff80ab;
+            transform: translateY(-5px);
+        }
+
+        #response {
+            font-size: 1.2rem;
+            display: none;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(255, 64, 129, 0.2);
+            color: #f0f0f0;
+            margin-top: 20px;
+            word-wrap: break-word;
+            overflow: auto;
+            white-space: pre-wrap;
+            text-shadow: 0 0 10px rgba(255, 64, 129, 0.7); /* Glowing text */
+        }
+
+        #loader {
+            display: none;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #ff4081;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-top: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive Styles */
+        @media screen and (max-width: 600px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            form {
+                width: 90%;
+                padding: 20px;
+            }
+
+            input[type="file"],
+            input[type="text"] {
+                font-size: 14px;
+                padding: 12px;
+            }
+
+            button {
+                font-size: 16px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h1>Upload Video for Analysis</h1>
+
+        <form id="uploadForm">
+            <input type="file" id="videoFile" accept="video/*" required>
+            <input type="text" id="userPrompt" placeholder="Enter your precautions" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        <div id="loader"></div> <!-- Loader Element -->
+
+        <h1 id="responseHeader" style="display: none;">Response</h1> <!-- Initially hidden header -->
+        <pre id="response"></pre>
+    </div>
+
+    <script>
+        document.getElementById("uploadForm").onsubmit = async function (event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const formData = new FormData();
+            const videoFile = document.getElementById("videoFile").files[0];
+            const userPrompt = document.getElementById("userPrompt").value;
+            formData.append("file", videoFile);
+            formData.append("user_prompt", userPrompt);
+
+            // Show the loader
+            const loader = document.getElementById("loader");
+            loader.style.display = "block";
+
+            // Hide the response initially
+            const responseContainer = document.getElementById("response");
+            responseContainer.style.display = "none";
+            const responseHeader = document.getElementById("responseHeader");
+            responseHeader.style.display = "none"; // Hide response header initially
+
+            try {
+                const response = await fetch("http://localhost:8000/upload-video/", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                // Hide the loader
+                loader.style.display = "none";
+
+                if (response.ok) {
+                    const generatedText = await response.text(); // Get plain text response
+                    const formattedText = convertTextToHTML(generatedText); // Convert the text to HTML
+                    responseContainer.innerHTML = formattedText; // Display the generated HTML
+                    responseContainer.style.display = "block"; // Show response when data is received
+                    responseHeader.style.display = "block"; // Show response header when data is received
+                } else {
+                    responseContainer.textContent = "Error: " + response.status;
+                    responseContainer.style.display = "block"; // Show error message
+                    responseHeader.style.display = "block"; // Show response header on error
+                }
+            } catch (error) {
+                // Hide the loader
+                loader.style.display = "none";
+                responseContainer.textContent = "Error: " + error.message;
+                responseContainer.style.display = "block"; // Show error message
+                responseHeader.style.display = "block"; // Show response header on error
+            }
+        };
+
+        function convertTextToHTML(text) {
+            // Convert **bold** to <strong> tags
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Convert bullet points starting with * followed by a space to <li> and wrap in <ul>
+            text = text.replace(/(?:^|\n)\* (.+?)(?=\n|$)/g, '<li>$1</li>');
+
+            // Wrap all <li> items in a <ul> block
+            if (text.includes('<li>')) {
+                text = '<ul>' + text + '</ul>';
+            }
+
+            // Replace remaining single newlines with <br> (after bullet points have been handled)
+            text = text.replace(/\n/g, '<br>');
+
+            return text;
+        }
+    </script>
+</body>
+
+</html>
